@@ -1,6 +1,8 @@
 from board import Board
 from player import Player
 from piece import PieceColor
+from logger import logger
+import pdb
 
 class Game(object):
     def __init__(self, playerA = "Player A", playerB = "Player B"):
@@ -11,6 +13,25 @@ class Game(object):
         self.winner = ""
         self._gameOver = False
         self.totalMoves = 0
+
+    @classmethod
+    def resumeFromBoardState(cls, playerA = "Player A", playerB = "Player " \
+            "B", boardState = None):
+        game = cls(playerA, playerB)
+        game._setBoardState(boardState)
+        return game
+
+    def _setBoardState(self, boardState):
+        logger.debug('Setting board state')
+        if not boardState:
+            return
+        if __debug__:
+            pdb.set_trace()
+        self._board.removeAllPiecesFromBoard()
+        self._board.validateAndSetBoardState(boardState)
+        # TODO: Validate and set the board state
+        self.playerIdTurn = PieceColor.Black.value
+        pass
 
     def play(self):
 
@@ -47,7 +68,7 @@ class Game(object):
         validMove = self._board.isMovePossible(playerColor, fromPosition, toPosition)
 
         if not validMove:
-            print 'Cannot move the piece, Invalid move'
+            logger.debug('Cannot move the piece, Invalid move')
             # Construct json object and return information
             return
 
@@ -60,7 +81,8 @@ class Game(object):
         # checked. Reverts the move if this is the case. Also, returns false
         if self._board.isPlayerChecked(playerColor):
             self._board.undoLastMove()
-            print 'Cannot make this move. King is left in a check position'
+            logger.debug('Cannot make this move. King is left in a check' \
+                    'position')
             return False
 
         #Check if the opponent's King has been check mate
@@ -73,22 +95,26 @@ class Game(object):
 
         if self._board.isPlayerChecked(opponentPlayerColor):
             #TODO: Return information in JSON that opponent is in check
-            print 'Opponent player has been checked'
+            logger.debug('Opponent player has been checked')
 
         self.totalMoves += 1
         #self._board.movePiece(fromPosition, toPosition)
         self.playerIdTurn ^= 1
 
+    def checkIfGameIsOver(self):
+        for player in self.players:
+            playerColor = player.getPlayerPieceColor()
+            self._board.isPlayerCheckMate(playerColor)
+
     def undoLastMove(self):
         undo = self._board.undoLastMove()
         if not undo:
-            print 'Cannot undo any more'
+            logger.debug('Cannot undo any more')
         else:
             self.totalMoves -= 1
 
     def printGameState(self):
-        print '\nGame State after move number %s:\n' \
-            %self.totalMoves
+        logger.debug('\nGame State after move number %s:\n' %self.totalMoves)
         self._board.printCurrentBoardState()
 
 class PlayerTurnError(Exception):
@@ -110,3 +136,18 @@ if __name__=="__main__":
     game.printGameState()
     game.undoLastMove()
 
+    if __debug__:
+        pdb.set_trace()
+
+    boardState = [
+            ['...', '...', '...', '...', 'WKi', '...', '...', '...'],
+            ['...', '...', '...', '...', 'BQu', '...', '...', '...', ],
+            ['...', '...', '...', '...', 'BRo', '...', '...', '...', ],
+            ['...', '...', '...', '...', '...', '...', '...', '...', ],
+            ['...', '...', '...', '...', '...', '...', '...', '...', ],
+            ['...', '...', '...', '...', 'BKi', '...', '...', '...', ],
+            ['...', '...', '...', '...', '...', '...', '...', '...', ],
+            ['...', '...', '...', '...', '...', '...', '...', '...', ]]
+    game = Game.resumeFromBoardState("Player A", "Player B", boardState)
+    game.checkIfGameIsOver()
+    game.printGameState()

@@ -1,5 +1,7 @@
 from square import *
 from history import History
+from logger import logger
+import pdb
 
 class Board(object):
     def __init__(self):
@@ -12,6 +14,7 @@ class Board(object):
         for row in xrange(self.rows):
             boardCol = []
             for col in xrange(self.cols):
+                # Initial piece is instantiated and set int the square class
                 if (row + col) % 2 == 0:
                     square = BlackSquare((row, col))
                 else:
@@ -21,6 +24,29 @@ class Board(object):
                 boardCol.append(square)
 
             self._squares.append(boardCol)
+
+    def removeAllPiecesFromBoard(self):
+        if __debug__:
+            pdb.set_trace()
+        for row in xrange(self.rows):
+            for col in xrange(self.cols):
+                square = self._squares[row][col]
+                square.removePiece()
+
+    def validateAndSetBoardState(self, boardState):
+        #TODO: Validate the pieces being set from the board state
+        for row in xrange(self.rows):
+            for col in xrange(self.cols):
+                try:
+                    pieceId = boardState[row][col]
+                    square = self._squares[row][col]
+                    square.setPieceWithId(pieceId)
+                    square.setPieceSquare()
+                except IndexError:
+                    logger.debug('Invalid board state to resume from')
+                    return False
+
+        return True
 
     def checkBounds(self, location):
         row = location[0]
@@ -108,7 +134,7 @@ class Board(object):
     def isPlayerChecked(self, playerColor, kingPiece = None, kingPosition =
             None):
 
-        if not (kingPiece and kingPosition):
+        if kingPiece is None or kingPosition is None:
             kingPiece, kingPosition = self._getKingOfPlayer(playerColor)
 
         # Check each opponent piece if it is attacking the King
@@ -132,22 +158,36 @@ class Board(object):
     def isPlayerCheckMate(self, playerColor):
         kingPiece, kingPosition = self._getKingOfPlayer(playerColor)
         pieces = self._getAllPiecesOfColor(playerColor)
+        logger.debug(playerColor)
+        logger.debug((kingPiece, kingPosition, pieces))
+
+        if __debug__:
+            pdb.set_trace()
 
         for piece in pieces:
             fromPosition = piece.getPiecePosition()
             for row in xrange(self.rows):
                 for col in xrange(self.cols):
                     toPosition = (row, col)
+                    if row == 1 and col == 4 and __debug__:
+                        pdb.set_trace()
                     movePossible = self.isMovePossible(playerColor, fromPosition,
                             toPosition)
-                    if movePossible and not \
-                    self.isPlayerChecked(playerColor, kingPiece, kingPosition):
-                        return False
+                    if movePossible:
+                        logger.debug("%s to %s" %(fromPosition ,toPosition))
+                        self.movePiece(fromPosition, toPosition)
+                        if not self.isPlayerChecked(playerColor):
+                            self.undoLastMove()
+                            return False
+                        self.undoLastMove()
+
+        logger.debug("Player with color %s has been check mated! Game over buddy!" %playerColor)
 
         return True
 
-
     def movePiece(self, fromPosition, toPosition):
+        if __debug__:
+            pdb.set_trace()
         fromSquare = self._getSquareAtPosition(fromPosition)
         toSquare = self._getSquareAtPosition(toPosition)
         fromPiece = fromSquare.piece
@@ -164,6 +204,8 @@ class Board(object):
     Restores board state before the last move, if possible
     """
     def undoLastMove(self):
+        if __debug__:
+            pdb.set_trace()
         if self._history.canUndoLastMove():
             fromPosition, toPosition, killedPiece = self._history.undoLastMove()
             piece = self._getPieceAtPosition(toPosition)
@@ -193,7 +235,9 @@ class Board(object):
 
     def printCurrentBoardState(self):
         for row in xrange(self.rows):
-            for col in xrange(self.cols):
-                print self._squares[row][col].getPieceInfoAtSquare(),
-            print '\n'
+            colInfo = ["".join(self._squares[row][col].getPieceInfoAtSquare()) for col in xrange(self.cols)]
+            logger.debug(colInfo)
+#            for col in xrange(self.cols):
+#                print self._squares[row][col].getPieceInfoAtSquare(),
+#            print '\n'
 

@@ -9,9 +9,9 @@ class Piece(object):
         self.pieceColor = color
         #pieceType is enum of class PieceType
         self.pieceType = pieceType
-        #print pieceType
+        #logger.debug(pieceType)
         self.pieceName = Piece.pieceNames[pieceType.value]
-        #print self.pieceName
+        #logger.debug(self.pieceName)
         self.square = None
         self.moved = False
 
@@ -80,10 +80,15 @@ class KingPiece(Piece):
         return True
 
     def isValidPieceMove(self, fromSquare, toSquare):
-        diff = abs(fromSquare.row - toSquare.row) + \
-                abs(fromSquare.col - toSquare.col)
+        rowMove = abs(fromSquare.row - toSquare.row)
+        colMove = abs(fromSquare.col - toSquare.col)
 
-        if diff == 0 or diff > 2:
+        cumulative = rowMove + colMove
+
+        if cumulative == 0 or cumulative > 2:
+            return False
+
+        if rowMove > 1 or colMove > 1:
             return False
 
         return True
@@ -283,9 +288,10 @@ class PawnPiece(Piece):
             # Check possible attack move
             if fromPiece.pieceColor == toPiece.pieceColor:
                 return False
-            print 'Pawn at location %s is attacking piece %s at' \
+            logger.debug('Pawn at location %s is attacking piece %s at' \
                     'location %s' %(self.fromPiece.square.position, \
-                            self.toPiece.pieceType, self.toPiece.square.position)
+                            self.toPiece.pieceType, \
+                            self.toPiece.square.position))
         else:
             # Invalid move
             return False
@@ -365,6 +371,9 @@ class PieceFactory(object):
 
     @staticmethod
     def createPiece(pieceColor, pieceType):
+        if pieceColor is None:
+            return None
+
         if pieceType == PieceType.King:
             return KingPiece(pieceColor)
         elif pieceType == PieceType.Queen:
@@ -375,11 +384,13 @@ class PieceFactory(object):
             return KnightPiece(pieceColor)
         elif pieceType == PieceType.Rook:
             return RookPiece(pieceColor)
-        else:
+        elif pieceType == PieceType.Pawn:
             if pieceColor == PieceColor.White:
                 return WhitePawnPiece(pieceColor)
             else:
                 return BlackPawnPiece(pieceColor)
+        else:
+            return None
 
     @staticmethod
     def createPieceWithPos(piecePos):
@@ -408,3 +419,35 @@ class PieceFactory(object):
                 return PieceFactory.createPiece(pieceColor, PieceType.King)
 
         return None
+
+    @staticmethod
+    def createPieceWithId(pieceId):
+        color = pieceId[0:1]
+        pieceId = pieceId[1:].lower()
+
+        pieceColor = None
+
+        if color in 'wW':
+            pieceColor = PieceColor.White
+        elif color in 'bB':
+            pieceColor = PieceColor.Black
+
+        if pieceColor is None:
+            return None
+
+        if pieceId == 'pa':
+            return PieceFactory.createPiece(pieceColor, PieceType.Pawn)
+        elif pieceId == 'ro':
+            return PieceFactory.createPiece(pieceColor, PieceType.Rook)
+        elif pieceId == 'kn':
+            return PieceFactory.createPiece(pieceColor, PieceType.Knight)
+        elif pieceId == 'bi':
+            return PieceFactory.createPiece(pieceColor, PieceType.Bishop)
+        elif pieceId == 'qu':
+            return PieceFactory.createPiece(pieceColor, PieceType.Queen)
+        elif pieceId == 'ki':
+            return PieceFactory.createPiece(pieceColor, PieceType.King)
+        else:
+            return None
+
+

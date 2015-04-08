@@ -1,25 +1,33 @@
 from piece import *
+from logger import logger
+import pdb
 
 class Square(object):
     def __init__(self, position):
         self.piece = None
-        rowPos = position[0]
         self.row = position[0]
         self.col = position[1]
         self.position = position
 
         self.piece = PieceFactory.createPieceWithPos(position)
         if self.piece is not None:
-            print self.piece
+            logger.debug(self.piece)
 
     def setPieceSquare(self):
         if self.piece is not None:
             self.piece.setSquare(self)
 
+    def setPieceWithId(self, pieceId):
+        self.piece = PieceFactory.createPieceWithId(pieceId)
+        #logger.debug(self.piece)
+
     def setPiece(self, piece):
         self.piece = piece
 
     def removePiece(self):
+        #pdb.set_trace()
+        if self.piece:
+            self.piece.clearSquare()
         self.piece = None
 
     def getPiece(self):
